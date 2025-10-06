@@ -1,0 +1,29 @@
+# 1. Define the URI of the directory you want to download from
+$uri = "https://download.postgresql.org/pub/repos/yum/17/redhat/rhel-8-x86_64/repodata"
+
+# 2. Define the local folder where you want to save the files
+$downloadFolder = "C:\Users\sivas\Downloads\post-binaries"
+
+# 3. Create the local directory if it doesn't exist
+if (-not (Test-Path $downloadFolder)) {
+    New-Item -ItemType Directory -Path $downloadFolder | Out-Null
+}
+
+# 4. Scrape the URI to get a list of links
+$links = Invoke-WebRequest -Uri $uri | Select-Object -ExpandProperty Links
+
+# 5. Loop through each link to download the files
+foreach ($link in $links) {
+    # Check if the link is a file (not a directory) and is not the "Parent Directory" link
+    if ($link.href -notmatch "\/$" -and $link.href -ne "../") {
+        # Construct the full URL of the file to download
+        $fileUri = [uri]::new($uri, $link.href)
+        
+        # Define the local path for the downloaded file
+        $filePath = Join-Path -Path $downloadFolder -ChildPath $link.href
+        
+        # Download the file using Invoke-WebRequest
+        Write-Host "Downloading $($fileUri.AbsoluteUri) to $filePath"
+        Invoke-WebRequest -Uri $fileUri -OutFile $filePath
+    }
+}
